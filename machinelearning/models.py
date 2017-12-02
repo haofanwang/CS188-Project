@@ -468,6 +468,11 @@ class LanguageIDModel(Model):
         # Remember to set self.learning_rate!
         # You may use any learning rate that works well for your architecture
         "*** YOUR CODE HERE ***"
+        #0.032 79.8%
+        #0.034 83.8%
+        #0.045 79.4%
+        self.learning_rate = 0.034
+        self.graph = None
 
     def run(self, xs, y=None):
         """
@@ -510,7 +515,58 @@ class LanguageIDModel(Model):
 
         "*** YOUR CODE HERE ***"
 
+        if not self.graph:
+            dim = 80
+            w1 = nn.Variable(self.num_chars, self.num_chars)
+            w2 = nn.Variable(self.num_chars, self.num_chars)
+            w3 = nn.Variable(self.num_chars, 2)
+            b1 = nn.Variable(1, self.num_chars)
+            b2 = nn.Variable(1, self.num_chars)
+            h0 = nn.Variable(1, self.num_chars)
+
+            w3 = nn.Variable(self.num_chars, self.num_chars)
+            w4 = nn.Variable(self.num_chars, dim)
+            w6 = nn.Variable(dim, 5)
+            b3 = nn.Variable(1, self.num_chars)
+            b4 = nn.Variable(1, dim)
+            b6 = nn.Variable(1, 5)
+
+            w5 = nn.Variable(self.num_chars, self.num_chars)
+            b5 = nn.Variable(1, self.num_chars)
+            
+            self.l = [w1,w2,b1,b2,h0,w3,w4,b3,b4, w5, b5,w6,b6]
+
+        self.graph = nn.Graph(self.l)
+
+        "* YOUR CODE HERE *"
+        char_inputs = [] 
+        h = self.l[4]
+        zero = np.zeros((batch_size, self.num_chars))
+        zeroInput = nn.Input(self.graph,zero)
+        z = nn.MatrixVectorAdd(self.graph, zeroInput, h)
+        h = z
+
+        for i in range(len(xs)):
+            char_inputs.append(nn.Input(self.graph, xs[i])) 
+            incorporate = nn.MatrixVectorAdd(self.graph, h, char_inputs[i])
+            mult = nn.MatrixMultiply(self.graph, incorporate, self.l[0])
+            add = nn.MatrixVectorAdd(self.graph, mult, self.l[2]) 
+            relu = nn.ReLU(self.graph, add)
+            h = relu
+
+        mult2 = nn.MatrixMultiply(self.graph, h, self.l[6])
+        add2 = nn.MatrixVectorAdd(self.graph, mult2, self.l[8])
+        relu2 = nn.ReLU(self.graph, add2)
+        mult3 = nn.MatrixMultiply(self.graph, relu2, self.l[11])
+        add3 = nn.MatrixVectorAdd(self.graph, mult3, self.l[12])
+
         if y is not None:
-            "*** YOUR CODE HERE ***"
+            "* YOUR CODE HERE *"
+            input_y = nn.Input(self.graph, y)
+            loss = nn.SoftmaxLoss(self.graph, add3, input_y)
+            return self.graph
         else:
-            "*** YOUR CODE HERE ***"
+            "* YOUR CODE HERE *"
+            return self.graph.get_output(self.graph.get_nodes()[-1])
+        
+        
