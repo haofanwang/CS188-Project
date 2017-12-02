@@ -181,8 +181,9 @@ class OddRegressionModel(Model):
         # Remember to set self.learning_rate!
         # You may use any learning rate that works well for your architecture
         "*** YOUR CODE HERE ***"
-        self.learning_rate = 0.001
+        self.learning_rate = 0.1
         self.graph = None
+        self.list = []
 
     def run(self, x, y=None):
         """
@@ -204,170 +205,59 @@ class OddRegressionModel(Model):
         Note: DO NOT call backprop() or step() inside this method!
         """
         "*** YOUR CODE HERE ***"
-
-        w1 = nn.Variable(len(x),len(x))
-        w2 = nn.Variable(len(x),len(x))
-        w3 = nn.Variable(len(x),len(x))
-        w4 = nn.Variable(len(x),len(x))
-        w5 = nn.Variable(len(x),len(x))
-        w6 = nn.Variable(len(x),len(x))
-
-        b1 = nn.Variable(len(x),1)
-        b2 = nn.Variable(len(x),1)
-        b3 = nn.Variable(len(x),1)
-        b4 = nn.Variable(len(x),1)
-        b5 = nn.Variable(len(x),1)
-        b6 = nn.Variable(len(x),1)
-
-        self.graph = nn.Graph([w1,w2,w3,w4,w5,w6,b1,b2,b3,b4,b5,b6])
-
+        n = 4
+        if not self.graph:
+                w1 = nn.Variable(1, 50)
+                w2 = nn.Variable(50, 50)
+                w3 = nn.Variable(50, 1)
+                b1 = nn.Variable(1, 50)
+                b2 = nn.Variable(1, 50)
+                b3 = nn.Variable(1, 1)
+                self.list = [w1,w2,w3,b1,b2,b3]
+                self.graph = nn.Graph(self.list)
+        self.graph = nn.Graph(self.list)
         input_x = nn.Input(self.graph,x)
+        if y is not None:
+            input_y = nn.Input(self.graph,y)
+        input_neg = nn.Input(self.graph, np.matrix([-1.]))
+        mult = nn.MatrixMultiply(self.graph, input_x, self.list[0])
+        add = nn.MatrixVectorAdd(self.graph, mult, self.list[3])
+        relu = nn.ReLU(self.graph, add)
+        mult2 = nn.MatrixMultiply(self.graph, relu, self.list[1])
+        add2 = nn.MatrixVectorAdd(self.graph, mult2, self.list[4])
+        relu2 = nn.ReLU(self.graph, add2)
+        mult3 = nn.MatrixMultiply(self.graph, relu2, self.list[2])
+        add3 = nn.MatrixVectorAdd(self.graph, mult3, self.list[5])
+        ad = add3
 
-        mult1_1 = nn.MatrixMultiply(self.graph, w1, input_x)
-        mult1_2 = nn.MatrixMultiply(self.graph, w2, input_x)
-        add1_1 = nn.MatrixVectorAdd(self.graph,mult1_1,b1)
-        add1_2 = nn.MatrixVectorAdd(self.graph,mult1_2,b2)
-        relu1_1 = nn.ReLU(self.graph, add1_1)
-        relu1_2 = nn.ReLU(self.graph, add1_2)
+        neg = nn.MatrixMultiply(self.graph, input_x, input_neg)
+        mult = nn.MatrixMultiply(self.graph, neg, self.list[0])
+        add = nn.MatrixVectorAdd(self.graph, mult, self.list[3])
+        relu = nn.ReLU(self.graph, add)
+        mult2 = nn.MatrixMultiply(self.graph, relu, self.list[1])
+        add2 = nn.MatrixVectorAdd(self.graph, mult2, self.list[4])
+        relu2 = nn.ReLU(self.graph, add2)
+        mult3 = nn.MatrixMultiply(self.graph, relu2, self.list[2])
+        add3 = nn.MatrixVectorAdd(self.graph, mult3, self.list[5])
+        sb = nn.MatrixMultiply(self.graph, add3, input_neg)
 
-        mult2_1 = nn.MatrixMultiply(self.graph, w3, relu1_1)
-        mult2_2 = nn.MatrixMultiply(self.graph, w4, relu1_2)
-        add2_1 = nn.MatrixVectorAdd(self.graph,mult2_1,b3)
-        add2_2 = nn.MatrixVectorAdd(self.graph,mult2_2,b4)
-        relu2_1 = nn.ReLU(self.graph, add2_1)
-        relu2_2 = nn.ReLU(self.graph, add2_2)
-
-        mult3_1 = nn.MatrixMultiply(self.graph, w5, relu2_1)
-        mult3_2 = nn.MatrixMultiply(self.graph, w6, relu2_2)
-        add3_1 = nn.MatrixVectorAdd(self.graph,mult3_1,b5)
-        add3_2 = nn.MatrixVectorAdd(self.graph,mult3_2,b6)
-
-        out1 = nn.MatrixVectorAdd(self.graph,add3_1,add3_2)
-
-        inverse_input = nn.Input(self.graph,-x)
-        s_mult1_1 = nn.MatrixMultiply(self.graph, w1, inverse_input)
-        s_mult1_2 = nn.MatrixMultiply(self.graph, w2, inverse_input)
-        s_add1_1 = nn.MatrixVectorAdd(self.graph,s_mult1_1,b1)
-        s_add1_2 = nn.MatrixVectorAdd(self.graph,s_mult1_2,b2)
-        s_relu1_1 = nn.ReLU(self.graph, s_add1_1)
-        s_relu1_2 = nn.ReLU(self.graph, s_add1_2)
-
-        s_mult2_1 = nn.MatrixMultiply(self.graph, w3, s_relu1_1)
-        s_mult2_2 = nn.MatrixMultiply(self.graph, w4, s_relu1_2)
-        s_add2_1 = nn.MatrixVectorAdd(self.graph,s_mult2_1,b3)
-        s_add2_2 = nn.MatrixVectorAdd(self.graph,s_mult2_2,b4)
-        s_relu2_1 = nn.ReLU(self.graph, s_add2_1)
-        s_relu2_2 = nn.ReLU(self.graph, s_add2_2)
-
-        s_mult3_1 = nn.MatrixMultiply(self.graph, w5, s_relu2_1)
-        s_mult3_2 = nn.MatrixMultiply(self.graph, w6, s_relu2_2)
-        s_add3_1 = nn.MatrixVectorAdd(self.graph,s_mult3_1,b5)
-        s_add3_2 = nn.MatrixVectorAdd(self.graph,s_mult3_2,b6)
-
-        out2 = nn.MatrixVectorAdd(self.graph,s_add3_1,s_add3_2)
-
-        out = nn.MatrixVectorAdd(self.graph,out1,out2)
+        # f(x) = g(x)-g(-x)
+        sub = nn.MatrixVectorAdd(self.graph, ad, sb)
 
 
         if y is not None:
-            # At training time, the correct output `y` is known.
+            # At training time, the correct output y is known.
             # Here, you should construct a loss node, and return the nn.Graph
             # that the node belongs to. The loss node must be the last node
             # added to the graph.
-            "*** YOUR CODE HERE ***"
-            '''
-            w1 = nn.Variable(len(x),len(x))
-            w2 = nn.Variable(len(x),len(x))
-            w3 = nn.Variable(len(x),len(x))
-            w4 = nn.Variable(len(x),len(x))
-            w5 = nn.Variable(len(x),len(x))
-            w6 = nn.Variable(len(x),len(x))
 
-            b1 = nn.Variable(len(x),1)
-            b2 = nn.Variable(len(x),1)
-            b3 = nn.Variable(len(x),1)
-            b4 = nn.Variable(len(x),1)
-            b5 = nn.Variable(len(x),1)
-            b6 = nn.Variable(len(x),1)
-
-            self.graph = nn.Graph([w1,w2,w3,w4,w5,w6,b1,b2,b3,b4,b5,b6])
-
-            input_x = nn.Input(self.graph,x)
-
-            mult1_1 = nn.MatrixMultiply(self.graph, w1, input_x)
-            mult1_2 = nn.MatrixMultiply(self.graph, w2, input_x)
-            add1_1 = nn.MatrixVectorAdd(self.graph,mult1_1,b1)
-            add1_2 = nn.MatrixVectorAdd(self.graph,mult1_2,b2)
-            relu1_1 = nn.ReLU(self.graph, add1_1)
-            relu1_2 = nn.ReLU(self.graph, add1_2)
-
-            mult2_1 = nn.MatrixMultiply(self.graph, w3, relu1_1)
-            mult2_2 = nn.MatrixMultiply(self.graph, w4, relu1_2)
-            add2_1 = nn.MatrixVectorAdd(self.graph,mult2_1,b3)
-            add2_2 = nn.MatrixVectorAdd(self.graph,mult2_2,b4)
-            relu2_1 = nn.ReLU(self.graph, add2_1)
-            relu2_2 = nn.ReLU(self.graph, add2_2)
-
-            mult3_1 = nn.MatrixMultiply(self.graph, w5, relu2_1)
-            mult3_2 = nn.MatrixMultiply(self.graph, w6, relu2_2)
-            add3_1 = nn.MatrixVectorAdd(self.graph,mult3_1,b5)
-            add3_2 = nn.MatrixVectorAdd(self.graph,mult3_2,b6)
-
-            out1 = nn.MatrixVectorAdd(self.graph,add3_1,add3_2)
-
-            inverse_input = nn.Input(self.graph,-x)
-            s_mult1_1 = nn.MatrixMultiply(self.graph, w1, inverse_input)
-            s_mult1_2 = nn.MatrixMultiply(self.graph, w2, inverse_input)
-            s_add1_1 = nn.MatrixVectorAdd(self.graph,s_mult1_1,b1)
-            s_add1_2 = nn.MatrixVectorAdd(self.graph,s_mult1_2,b2)
-            s_relu1_1 = nn.ReLU(self.graph, s_add1_1)
-            s_relu1_2 = nn.ReLU(self.graph, s_add1_2)
-
-            s_mult2_1 = nn.MatrixMultiply(self.graph, w3, s_relu1_1)
-            s_mult2_2 = nn.MatrixMultiply(self.graph, w4, s_relu1_2)
-            s_add2_1 = nn.MatrixVectorAdd(self.graph,s_mult2_1,b3)
-            s_add2_2 = nn.MatrixVectorAdd(self.graph,s_mult2_2,b4)
-            s_relu2_1 = nn.ReLU(self.graph, s_add2_1)
-            s_relu2_2 = nn.ReLU(self.graph, s_add2_2)
-
-            s_mult3_1 = nn.MatrixMultiply(self.graph, w5, s_relu2_1)
-            s_mult3_2 = nn.MatrixMultiply(self.graph, w6, s_relu2_2)
-            s_add3_1 = nn.MatrixVectorAdd(self.graph,s_mult3_1,b5)
-            s_add3_2 = nn.MatrixVectorAdd(self.graph,s_mult3_2,b6)
-
-            out2 = nn.MatrixVectorAdd(self.graph,s_add3_1,s_add3_2)
-
-            out = nn.MatrixVectorminus(self.graph,out1,out2)
-            '''
-            input_y = nn.Input(self.graph,y)
-            loss = nn.SquareLoss(self.graph, out, input_y)
+            loss = nn.SquareLoss(self.graph, sub, input_y)
             return self.graph
-
         else:
             # At test time, the correct output is unknown.
             # You should instead return your model's prediction as a numpy array
-            "*** YOUR CODE HERE ***"
-            #for i in range(len(self.graph.get_nodes())):
-            #    print self.graph.get_nodes()[i]
-            w1 = nn.Variable(len(x),len(x))
-            b1 = nn.Variable(len(x),1)
-            self.graph = nn.Graph([w1,b1])
-            input_x = nn.Input(self.graph,x)
-            inverse_x = nn.Input(self.graph,-x)
 
-            mult1_1 = nn.MatrixMultiply(self.graph, w1, input_x)
-            add1_1 = nn.MatrixVectorAdd(self.graph,mult1_1,b1)
-
-            mult1_2 = nn.MatrixMultiply(self.graph, w1, inverse_x)
-            add1_2 = nn.MatrixVectorAdd(self.graph,mult1_2,b1)
-            w = -np.ones(len(x))
-            w = nn.Input(self.graph,w)
-
-
-            out = nn.MatrixVectorAdd(self.graph,add1_1,add1_2)
-
-            output = self.graph.get_output(self.graph.get_nodes()[-1])
-            return output
+            return self.graph.get_output(self.graph.get_nodes()[-1])
 
 
 
@@ -421,6 +311,7 @@ class DigitClassificationModel(Model):
 
         if len(x) == 1:
             return 0
+
         if not self.graph:
                 w1 = nn.Variable(784, 500)
                 w2 = nn.Variable(500, 500)
@@ -430,15 +321,18 @@ class DigitClassificationModel(Model):
                 b3 = nn.Variable(1, 10)
                 self.l = [w1,w2,w3,b1,b2,b3]
                 self.graph = nn.Graph(self.l)
+
         self.graph = nn.Graph(self.l)
-        input_x = nn.Input(self.graph,x) #Tx784
-        if y is not None: #<--- THIS LITTLE CONDITIONAL SO IMPORTANT HFS
+        input_x = nn.Input(self.graph,x)
+
+        if y is not None:
             input_y = nn.Input(self.graph,y)
-        mult = nn.MatrixMultiply(self.graph, input_x, self.l[0]) #Tx50
+
+        mult = nn.MatrixMultiply(self.graph, input_x, self.l[0])
         add = nn.MatrixVectorAdd(self.graph, mult, self.l[3])
         relu = nn.ReLU(self.graph, add)
-        mult2 = nn.MatrixMultiply(self.graph, relu, self.l[1]) #Tx50
-        add2 = nn.MatrixVectorAdd(self.graph, mult2, self.l[4]) #Tx50
+        mult2 = nn.MatrixMultiply(self.graph, relu, self.l[1])
+        add2 = nn.MatrixVectorAdd(self.graph, mult2, self.l[4])
         relu2 = nn.ReLU(self.graph, add2)
         mult3 = nn.MatrixMultiply(self.graph, relu2, self.l[2])
         add3 = nn.MatrixVectorAdd(self.graph, mult3, self.l[5])
@@ -452,7 +346,6 @@ class DigitClassificationModel(Model):
         else:
             # At test time, the correct output is unknown.
             # You should instead return your model's prediction as a numpy array
-            #print(self.graph.get_output(self.graph.get_nodes()[-1]))
             return self.graph.get_output(self.graph.get_nodes()[-1])
 
 class DeepQModel(Model):
@@ -473,6 +366,8 @@ class DeepQModel(Model):
         # Remember to set self.learning_rate!
         # You may use any learning rate that works well for your architecture
         "*** YOUR CODE HERE ***"
+        self.learning_rate = 0.01
+        self.graph = None
 
     def run(self, states, Q_target=None):
         """
@@ -501,10 +396,38 @@ class DeepQModel(Model):
         """
         "*** YOUR CODE HERE ***"
 
+        if not self.graph:
+            w1 = nn.Variable(4, 50)
+            w2 = nn.Variable(50, 50)
+            w3 = nn.Variable(50, 2)
+            b1 = nn.Variable(1, 50)
+            b2 = nn.Variable(1, 50)
+            b3 = nn.Variable(1, 2)
+            self.list = [w1,w2,w3,b1,b2,b3]
+            self.graph = nn.Graph(self.l)
+
+        self.graph = nn.Graph(self.l)
+        input_x = nn.Input(self.graph,states)
+
         if Q_target is not None:
-            "*** YOUR CODE HERE ***"
+            input_y = nn.Input(self.graph, Q_target)
+
+        mult = nn.MatrixMultiply(self.graph, input_x, self.list[0])
+        add = nn.MatrixVectorAdd(self.graph, mult, self.list[3])
+        relu = nn.ReLU(self.graph, add)
+        mult2 = nn.MatrixMultiply(self.graph, relu, self.list[1])
+        add2 = nn.MatrixVectorAdd(self.graph, mult2, self.list[4])
+        relu2 = nn.ReLU(self.graph, add2)
+        mult3 = nn.MatrixMultiply(self.graph, relu2, self.list[2])
+        add3 = nn.MatrixVectorAdd(self.graph, mult3, self.list[5])
+
+        if Q_target is not None:
+            "* YOUR CODE HERE *"
+            loss = nn.SquareLoss(self.graph, add3, input_y)
+            return self.graph
         else:
-            "*** YOUR CODE HERE ***"
+            "* YOUR CODE HERE *"
+            return self.graph.get_output(self.graph.get_nodes()[-1])
 
     def get_action(self, state, eps):
         """
